@@ -19,7 +19,7 @@ module.exports = function(RED) {
   WatchDirectory.prototype.startListening = function() {
     var node = this;
 
-    let awaitWriteConfig = true;
+    let awaitWriteConfig = false;
     if (node.awaitWriteFinish) {
       awaitWriteConfig = {
         stabilityThreshold: node.stabilityThreshold,
