@@ -9,6 +9,7 @@ Because the native node watcher is low level, and triggers an "add file" event b
 The other watcher (wfwatcher) recursively checks and attaches filenames to the payload... Most of nodes who work with files check msg.filename.
 
 So this plugin attaches to the msg :
+ - watchdir : the directory which is set to be watched
  - file : the name of the file, with extension
  - filedir : Directory of file
  - filename: the complete path to the file

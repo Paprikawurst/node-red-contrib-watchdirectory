@@ -89,9 +89,10 @@ module.exports = function(RED) {
 
   WatchDirectory.prototype.createMSG = function(filename, stats) {
     filename = path.normalize( filename )
+    const watchdir = this.folder
     const file = path.basename(filename)
     const filedir = path.dirname(filename)
-    return {file,filedir,filename, payload: filename, size: stats?stats.size:0}
+    return {watchdir,file,filedir,filename, payload: filename, size: stats?stats.size:0}
   }
 
   RED.nodes.registerType("watch-directory",WatchDirectory);
