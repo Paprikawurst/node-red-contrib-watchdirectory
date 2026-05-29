@@ -1,6 +1,6 @@
 module.exports = function(RED) {
-    const chokidar = require('chokidar')
-    const path = require('path');
+  const chokidar = require('chokidar')
+  const path = require('path');
 
   function  WatchDirectory(config) {
     RED.nodes.createNode(this,config);
@@ -10,25 +10,37 @@ module.exports = function(RED) {
     this.typeEvent = config.typeEvent;
     this.ignoreInitial = config.ignoreInitial;
     this.ignoredFiles = config.ignoredFiles || false;
-    this.startListening();  
+    this.awaitWriteFinish = config.awaitWriteFinish;
+    this.stabilityThreshold = parseInt(config.stabilityThreshold) || 2000;
+
+    this.startListening();
   }
 
   WatchDirectory.prototype.startListening = function() {
     var node = this;
+
+    let awaitWriteConfig = true;
+    if (node.awaitWriteFinish) {
+      awaitWriteConfig = {
+        stabilityThreshold: node.stabilityThreshold,
+        pollInterval: 100
+      };
+    }
+
     // Initialize watcher.
     const watcher = chokidar.watch(node.folder, {
       ignored: (filename) => {
         filename = path.normalize( filename )
-        let file = path.basename(filename) 
-        if (file && file.length && node.ignoredFiles.length){ 
+        let file = path.basename(filename)
+        if (file && file.length && node.ignoredFiles.length){
           re = new RegExp(node.ignoredFiles)
           return re.test(file)
-        }      
+        }
       },
       persistent: true,
       depth: node.recursive,
       ignoreInitial: node.ignoreInitial,
-      awaitWriteFinish:true,
+      awaitWriteFinish:awaitWriteConfig,
       usePolling:true,
       alwaysStat: true,
       useFsEvents : true,
@@ -37,27 +49,27 @@ module.exports = function(RED) {
 
     let payload
     switch (node.typeEvent) {
-      case 'create': 
+      case 'create':
         watcher.on('add', (filename, stats) => {
-          payload = node.createMSG(filename, stats) 
+          payload = node.createMSG(filename, stats)
           node.send(payload)
           node.status({fill:"green", shape: "dot", text: "add "+filename})
         })
         break;
-      case 'update': 
+      case 'update':
         watcher.on('change', (filename, stats) => {
-          payload = node.createMSG(filename, stats) 
+          payload = node.createMSG(filename, stats)
           node.send(payload)
           node.status({fill:"green", shape: "dot", text: "update "+filename})
         })
         break;
-      case 'delete': 
+      case 'delete':
         watcher.on('unlink',(filename) => {
-          payload = node.createMSG(filename) 
+          payload = node.createMSG(filename)
           node.send(payload)
           node.status({fill:"green", shape: "dot", text: "delete "+filename})
-      })
-      break;
+        })
+        break;
     }
 
     watcher.on('ready', () => {
@@ -76,10 +88,10 @@ module.exports = function(RED) {
   }
 
   WatchDirectory.prototype.createMSG = function(filename, stats) {
-      filename = path.normalize( filename )
-      const file = path.basename(filename) 
-      const filedir = path.dirname(filename) 
-      return {file,filedir,filename, payload: filename, size: stats?stats.size:0}
+    filename = path.normalize( filename )
+    const file = path.basename(filename)
+    const filedir = path.dirname(filename)
+    return {file,filedir,filename, payload: filename, size: stats?stats.size:0}
   }
 
   RED.nodes.registerType("watch-directory",WatchDirectory);

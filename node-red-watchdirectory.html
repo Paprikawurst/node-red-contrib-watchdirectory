@@ -7,6 +7,8 @@
             folderType:{value:"str"},
             recursive: {value:0},
             typeEvent: {value:"create"},
+            awaitWriteFinish: {value:true},
+            stabilityThreshold: {value:2000},
             ignoreInitial: {value:true},
             ignoredFiles: {value:"",validate: RED.validators.typedInput("ignoredFilesType")},
             ignoredFilesType:   { value:"re" },
@@ -29,6 +31,14 @@
                 default: this.ignoredFilesType || 're',
                 types:['re'],
                 typeField: $("#node-input-ignoredFilesType")})
+
+            $("#node-input-awaitWriteFinish").on("change", function() {
+                if ($(this).is(":checked")) {
+                    $("#row-stabilityThreshold").show();
+                } else {
+                    $("#row-stabilityThreshold").hide();
+                }
+            }).trigger("change");
         },
         onsave: function(){
             this.ignoredFilesType = $("#node-input-ignoredFilesType").val()
@@ -55,12 +65,22 @@
         <input type="text" id="node-input-ignoredFiles" placeholder="Regex for exclude files">
         <input type="hidden" id="node-input-ignoredFilesType">
     </div>
-     <div class="form-row">
+    <div class="form-row">
         <label for="node-input-recursive"><i class="fa fa-sitemap"></i> Depth</label>
-         <input type="number" id="node-input-recursive" style="display: inline-block; width: auto; vertical-align: top;">
+        <input type="number" id="node-input-recursive" style="display: inline-block; width: auto; vertical-align: top;">
     </div>
     <div class="form-row">
-        <label for="node-input-ignoreInitial">&nbsp;</label>            
+        <label for="node-input-awaitWriteFinish">&nbsp;</label>
+        <input type="checkbox" id="node-input-awaitWriteFinish" style="display: inline-block; width: auto; vertical-align: top;">
+        <label for="node-input-awaitWriteFinish" style="width: 70%;"><i class="fa fa-clock-o"></i> Await write finish</label>
+    </div>
+    <div class="form-row" id="row-stabilityThreshold">
+        <label for="node-input-stabilityThreshold"><i class="fa fa-hourglass-half"></i> Threshold</label>
+        <input type="number" id="node-input-stabilityThreshold" style="width: 100px;">
+        <span>ms</span>
+    </div>
+    <div class="form-row">
+        <label for="node-input-ignoreInitial">&nbsp;</label>
         <input type="checkbox" id="node-input-ignoreInitial" style="display: inline-block; width: auto; vertical-align: top;">
         <label for="node-input-ignoreInitial" style="width: auto"><i class="fa fa-reply-all" style="transform: scaleX(-1);"></i> On start ignore files in folder</label>
     </div>
@@ -71,7 +91,7 @@
 </script>
 
 <script type="text/html" data-help-name="watch-directory">
-    <p>A simple node that watch directory for detect add, change and delete file / folder. 
+    <p>A simple node that watch directory for detect add, change and delete file / folder.
         Wrapper for <a href='https://github.com/paulmillr/chokidar' target="_blank">chokidar</a></p>
 
     <h3>Properties</h3>
@@ -93,22 +113,22 @@
         <dt>file
             <span class="property-type">string</span>
         </dt>
-        <dd>the name of the file, with extension</dd> 
+        <dd>the name of the file, with extension</dd>
 
         <dt>filedir
             <span class="property-type">string</span>
         </dt>
-        <dd>the directory of the file</dd> 
+        <dd>the directory of the file</dd>
 
         <dt>filename
             <span class="property-type">string</span>
         </dt>
-        <dd>the complete path to the file (filedir + file)</dd> 
-       
+        <dd>the complete path to the file (filedir + file)</dd>
+
         <dt>payload
             <span class="property-type">string</span>
         </dt>
-        <dd>like filename : the complete path to the file (filedir + file)</dd> 
+        <dd>like filename : the complete path to the file (filedir + file)</dd>
     </dl>
 
     <h3>Details</h3>
