@@ -32,7 +32,7 @@ Each detected file event sends a message with the following properties:
 
 ### Example Output
 
-```javascript
+```json
 {
   "file": "report.xlsx",
   "filedir": "C:\\Users\\data\\reports",
@@ -81,15 +81,15 @@ Regular expression pattern to exclude specific files. The pattern is tested agai
 
 #### Regex Examples
 
-| Pattern | Matches | Description |
-|---------|---------|-------------|
-| `^\.` | `.hidden`, `.gitignore` | Files starting with a dot |
-| `\.tmp$` | `file.tmp`, `data.tmp` | Files ending with .tmp |
-| `^temp.*` | `temp.txt`, `tempfile.log` | Files starting with "temp" |
-| `\.(log\|bak)$` | `app.log`, `data.bak` | Files with .log or .bak extension |
+| Pattern          | Matches                        | Description                           |
+|------------------|--------------------------------|---------------------------------------|
+| `^\.`            | `.hidden`, `.gitignore`        | Files starting with a dot             |
+| `\.tmp$`         | `file.tmp`, `data.tmp`         | Files ending with .tmp                |
+| `^temp.*`        | `temp.txt`, `tempfile.log`     | Files starting with "temp"            |
+| `\.(log\|bak)$`  | `app.log`, `data.bak`          | Files with .log or .bak extension     |
 | `^(test\|draft)` | `test.doc`, `draft_report.pdf` | Files starting with "test" or "draft" |
-| `~$` | `~$document.docx` | Excel/Word temporary files |
-| `^\~\$\|^\.` | `~$file.xlsx`, `.hidden` | Temp files OR hidden files |
+| `~$`             | `~$document.docx`              | Excel/Word temporary files            |
+| `^\~\$\|^\.`     | `~$file.xlsx`, `.hidden`       | Temp files OR hidden files            |
 
 ### On Start Ignore Files in Folder (checkbox)
 
