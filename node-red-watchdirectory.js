@@ -14,8 +14,7 @@ module.exports = function(RED) {
   }
 
   WatchDirectory.prototype.startListening = function() {
-    var node = this;
-    // Initialize watcher.
+    const node = this;
     const watcher = chokidar.watch(node.folder, {
       ignored: (filename) => {
         filename = path.normalize( filename )
@@ -68,8 +67,7 @@ module.exports = function(RED) {
       node.status({fill:"red", shape: "dot", text: "Error : "+err.message})
       node.error(err)
     })
-
-    //on close
+    
     node.on('close', () => {
       watcher.close()
     })
