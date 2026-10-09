@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fatoldsun00/node-red-contrib-watchdirectory.git"
+    "url": "git+https://github.com/Paprikawurst/node-red-contrib-watchdirectory.git"
   },
   "keywords": [
     "nodered",
@@ -27,12 +27,12 @@
     "watcher",
     "watch"
   ],
-  "author": "FatOldSun",
+  "author": "Paprikawurst",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/fatoldsun00/node-red-contrib-watchdirectory/issues"
+    "url": "https://github.com/Paprikawurst/node-red-contrib-watchdirectory/issues"
   },
-  "homepage": "https://github.com/fatoldsun00/node-red-contrib-watchdirectory#readme",
+  "homepage": "https://github.com/Paprikawurst/node-red-contrib-watchdirectory#readme",
   "dependencies": {
     "chokidar": "^3.3.1"
   }
