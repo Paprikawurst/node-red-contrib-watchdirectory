@@ -1,36 +1,36 @@
 # node-red-contrib-watchdirectory
 
-A robust file/folder watcher for [Node-RED](https://nodered.org/), based on [chokidar](https://github.com/paulmillr/chokidar)
+A file watcher node for [Node-RED](https://nodered.org/), based on [chokidar](https://github.com/paulmillr/chokidar),
+initially created by [fatoldsun00](https://github.com/fatoldsun00) and now maintained by [Paprikawurst](https://github.com/Paprikawurst).
 
-## Why this node?
+## Why does this node exist?
 
-**Reliable file detection**: Unlike the native Node-RED watch node that triggers events before files are fully written to disk (requiring additional delay and RBE nodes), this node uses `awaitWriteFinish` to ensure files are completely written before triggering events.
-
-**Standard message format**: Attaches file information in the standard format that most Node-RED file nodes expect (`msg.filename`), making it easy to chain with other file processing nodes.
-
-**Advanced filtering**: Supports regex-based file filtering and configurable directory depth.
+- **Files are complete when the event fires**: the node uses chokidar's `awaitWriteFinish`, so an event is only sent once the file size has been stable for about 2 seconds. No extra delay or RBE nodes are needed to avoid half-written files.
+- **Standard message format**: the full path is set as `msg.filename`, which is what most Node-RED file nodes expect.
+- **Filtering**: ignore files with a regular expression and limit the depth of subfolders to watch.
 
 ## Features
 
-- **Three event types**: Monitor file creation, updates, or deletion
-- **Recursive watching**: Configure depth of subdirectories to monitor (0 = current folder only)
-- **Smart file filtering**: Use regex patterns to ignore specific files
-- **Flexible folder input**: Support for flow/global variables, environment variables, and JSONata expressions
-- **Initial file handling**: Option to ignore existing files when node starts
-- **Reliable detection**: Built-in `awaitWriteFinish` ensures files are completely written before triggering
-- **Status indicators**: Visual feedback showing current node state and last detected file
+- Watch for **created**, **updated** or **deleted** files (one event type per node)
+- Configurable folder depth
+- Regex to ignore files by name
+- Folder can be a string, flow/global variable, environment variable or JSONata expression
+- Option to ignore files that already exist when the node starts
+- Polling-based, so it also works on network drives and Docker volumes
 
-## Output Message Properties
+Only **files** are reported. Directory events (added or removed folders) are not sent.
 
-Each detected file event sends a message with the following properties:
+## Output
 
-- **`msg.file`** (string): The filename with extension (e.g., `document.pdf`)
-- **`msg.filedir`** (string): The directory path (e.g., `C:\Users\data\subfolder`)
-- **`msg.filename`** (string): The complete file path (e.g., `C:\Users\data\subfolder\document.pdf`)
-- **`msg.payload`** (string): The complete file path (same as `msg.filename`)
-- **`msg.size`** (number): File size in bytes (0 for delete events)
+Each event sends one message:
 
-### Example Output
+| Property       | Type   | Description                                                        |
+|----------------|--------|--------------------------------------------------------------------|
+| `msg.file`     | string | File name with extension, e.g. `report.xlsx`                       |
+| `msg.filedir`  | string | Directory of the file                                              |
+| `msg.filename` | string | Complete path to the file                                          |
+| `msg.payload`  | string | Same as `msg.filename`                                             |
+| `msg.size`     | number | File size in bytes (always `0` for delete events)                  |
 
 ```json
 {
@@ -42,208 +42,110 @@ Each detected file event sends a message with the following properties:
 }
 ```
 
-## Configuration Options
+## Configuration
 
 ### Folder (required)
 
-The directory to watch. Supports multiple input types:
+The directory to watch. The type selector next to the field supports:
 
-- **String**: Direct path (e.g., `C:\data\incoming` or `/var/data/incoming`)
-- **Flow variable**: `flow.watchPath`
-- **Global variable**: `global.dataDir`
-- **Environment variable**: `${DATA_DIR}`
-- **JSONata expression**: For dynamic path construction
+- **string**: a path such as `C:\data\incoming` or `/var/data/incoming`
+- **flow** / **global**: the name of a context variable, e.g. `watchPath`
+- **env**: the name of an environment variable, e.g. `DATA_DIR` (without `${}`)
+- **JSONata**: an expression that returns the path
 
-### Type Events (required)
+The value is evaluated **once when the flow is deployed or started**. Changing a variable later does not change the watched folder until the node is redeployed.
 
-Select which file event to monitor:
+### Type events (required)
 
-- **Create**: Triggers when a new file is added to the watched directory
-- **Update**: Triggers when an existing file is modified
-- **Delete**: Triggers when a file is removed
+- **Create**: a new file appeared
+- **Update**: an existing file was modified
+- **Delete**: a file was removed
 
-**Note**: You can only watch one event type per node. Use multiple nodes to monitor different events.
+Use several nodes if you need more than one event type.
+
+### Ignore files (regex, optional)
+
+A regular expression for files that should be ignored. It is tested against the **file name only** (not the full path). Enter the pattern **without** the `/` delimiters.
+
+| Pattern             | Ignores                                          |
+|---------------------|--------------------------------------------------|
+| `^\.`               | hidden files such as `.gitignore`                |
+| `\.tmp$`            | files ending in `.tmp`                           |
+| `^~\$`              | Office lock files such as `~$a.docx`             |
+| `~$`                | backup files ending in `~`, e.g. `a.txt~`        |
+| `\.(log\|bak)$`     | files ending in `.log` or `.bak`                 |
+| `^~\$\|^\.\|\.tmp$` | Office lock files, hidden files and `.tmp` files |
+
+(In the table, `\|` is only Markdown escaping for the pipe character. Type a plain `|` in the node.)
+
+The pattern is also applied to the name of the watched folder itself, so a pattern like `^\.` will ignore everything if the watched folder is called `.data`.
 
 ### Depth (number)
 
-Controls how deep into subdirectories the watcher should look:
+How many levels of subfolders are watched:
 
-- **0**: Watch only the specified folder (no subdirectories)
-- **1**: Watch the folder and first-level subdirectories
-- **2+**: Watch the folder and subdirectories up to the specified depth
-- Leave empty or use high number for unlimited depth
+- `0` (default): only files directly in the folder
+- `1`: the folder and its direct subfolders
+- `2` and higher: further levels
 
-### Ignore Files (regex, optional)
+There is no "unlimited" option. Use a high number if you need it. An empty field behaves like `0`.
 
-Regular expression pattern to exclude specific files. The pattern is tested against the **filename only** (not the full path).
+### On start ignore files in folder (checkbox)
 
-**Important**: Do NOT include the regex delimiters (`/`). Just provide the pattern.
+- **Checked** (default): files that already exist when the node starts are ignored. Only changes after the start produce events.
+- **Unchecked**: existing files are reported as created when the node starts, which is useful for processing a backlog.
 
-#### Regex Examples
+This only affects create events.
 
-| Pattern          | Matches                        | Description                           |
-|------------------|--------------------------------|---------------------------------------|
-| `^\.`            | `.hidden`, `.gitignore`        | Files starting with a dot             |
-| `\.tmp$`         | `file.tmp`, `data.tmp`         | Files ending with .tmp                |
-| `^temp.*`        | `temp.txt`, `tempfile.log`     | Files starting with "temp"            |
-| `\.(log\|bak)$`  | `app.log`, `data.bak`          | Files with .log or .bak extension     |
-| `^(test\|draft)` | `test.doc`, `draft_report.pdf` | Files starting with "test" or "draft" |
-| `~$`             | `~$document.docx`              | Excel/Word temporary files            |
-| `^\~\$\|^\.`     | `~$file.xlsx`, `.hidden`       | Temp files OR hidden files            |
+## Status
 
-### On Start Ignore Files in Folder (checkbox)
+| Status                               | Meaning                                                      |
+|--------------------------------------|--------------------------------------------------------------|
+| yellow ring `Listening...`           | Initial scan finished; shown once, 10 seconds after the scan |
+| green dot `add/update/delete <file>` | Last detected event; stays until the next event              |
+| red dot `Error : <message>`          | The watcher reported an error (also logged via `node.error`) |
 
-- **Checked** (recommended): Existing files in the directory are ignored when the node starts. Only new/changed files after deployment trigger events.
-- **Unchecked**: All existing files trigger events when the node starts (useful for processing backlogs)
+## Tips
 
-## Status Indicators
-
-The node displays its current state with colored status indicators:
-
-- **Yellow ring** "Listening...": Node is active and watching for file events (appears 10 seconds after startup)
-- **Green dot** "add [filename]": File creation detected
-- **Green dot** "update [filename]": File modification detected
-- **Green dot** "delete [filename]": File deletion detected
-- **Red dot** "Error: [message]": An error occurred (check debug panel for details)
-
-## Use Cases
-
-### Process Incoming Files
-
-Watch a folder for new CSV files and process them:
-
-```
-[watch-directory] --> [csv] --> [database]
-```
-
-### Backup System
-
-Monitor for file changes and trigger backups:
-
-```
-[watch-directory: update] --> [delay 5s] --> [exec: robocopy]
-```
-
-### Log File Monitoring
-
-Watch for new log entries and send alerts:
-
-```
-[watch-directory: update] --> [file in] --> [grep errors] --> [email]
-```
-
-### Photo Upload Detection
-
-Automatically process photos added to a camera upload folder:
-
-```
-[watch-directory] --> [image resize] --> [ftp upload]
-```
-
-### Data Pipeline Trigger
-
-Start data processing when new files arrive:
-
-```
-[watch-directory] --> [function: check file type] --> [process data]
-```
-
-## Best Practices
-
-### 1. Always Set Ignore Patterns for Temporary Files
-
-Many applications create temporary files (like Microsoft Office's `~$` files). Filter them out:
-
-```
-^\~\$|\.tmp$|\.swp$
-```
-
-### 2. Use Depth Limitation
-
-If you only need to watch a specific folder without subdirectories, set depth to `0`. This improves performance.
-
-### 3. Enable "Ignore Initial Files" for Production
-
-When deploying, enable this option to avoid processing existing files unless you specifically want to process a backlog.
-
-### 4. One Event Type Per Node
-
-If you need to react to both file creation and updates differently, use two separate watch-directory nodes.
-
-### 5. Combine with RBE Node for Updates
-
-Even with `awaitWriteFinish`, some applications may save files multiple times rapidly. Use an RBE (Report by Exception) node after this node to filter duplicate events.
-
-### 6. Use Specific Paths
-
-Watching broad directories (like `C:\` or `/`) can cause performance issues. Always watch the most specific directory needed.
+- **Ignore temporary files.** Applications often create temporary files while saving, e.g. `^~\$|\.tmp$|\.swp$`.
+- **Keep depth low.** The node polls every watched file, so watching many files or very broad folders (`C:\`, `/`) is expensive. Watch the most specific folder you can.
+- **Update events can repeat.** If an application saves a file several times, you get one update event per save. An RBE node or a delay can reduce duplicates.
 
 ## Troubleshooting
 
-### Node shows errors on Windows network drives
+**No events**
+- Check that the folder exists and is readable by the Node-RED process.
+- With "On start ignore files" checked, files that existed before deployment are not reported.
+- Check the selected event type.
+- Check that the ignore regex is not too broad and has no `/` delimiters.
+- Look at the debug panel / Node-RED log for errors.
 
-**Problem**: Network drives or UNC paths may not work with `useFsEvents`.
+**Events are delayed**
+This is expected: the node waits about 2 seconds for the file size to be stable, and polling adds a little more.
 
-**Solution**: This node uses polling (`usePolling: true`) which should work with network drives, but there may be a slight delay in detection.
+**Multiple events for one file**
+The writing application most likely saves the file more than once. See the tips above.
 
-### Files are detected before they're fully copied
+## Technical details
 
-**Problem**: Very large files still trigger events before copying completes.
+The node calls chokidar with these notable options:
 
-**Solution**: This should not happen with this node as `awaitWriteFinish` is enabled. If it does, add a delay node after this node.
+- `awaitWriteFinish: true`: wait until the file size is stable (chokidar default: 2000 ms)
+- `usePolling: true`: works on network drives and Docker volumes, at the cost of some CPU
+- `binaryInterval: 1000`: polling interval in ms for binary files
+- `alwaysStat: true`: file stats (used for `msg.size`) are always available
+- `ignoreInitial` and `depth` come from the node configuration
 
-### Too many events triggered
+## Requirements
 
-**Problem**: Node triggers multiple times for the same file.
-
-**Solution**: 
-- Check if your application saves files multiple times
-- Add an RBE node to filter duplicates
-- Verify your ignore pattern is working correctly
-
-### Regex pattern not working
-
-**Problem**: Files you want to ignore still trigger events.
-
-**Solution**:
-- Do NOT include the regex delimiters `/`
-- Test your pattern against the **filename only**, not the full path
-- Use a tool like [regex101.com](https://regex101.com) to test patterns
-- Remember to escape special characters: `\.` for literal dot
-
-### Node status stuck on "Listening..."
-
-**Problem**: Node seems to work but status doesn't update.
-
-**Solution**: This is normal. The status updates to show the last file event, but returns to "Listening..." after 10 seconds.
-
-### Events not firing
-
-**Problem**: Files are added but no events are triggered.
-
-**Checklist**:
-- Verify the folder path is correct and accessible
-- Check if "On start ignore files" is enabled and node was just deployed
-- Ensure your ignore pattern isn't too broad
-- Check Node-RED debug panel for error messages
-- Verify the correct event type is selected (create/update/delete)
-
-## Prerequisites
-
-Have Node-RED installed and working, if you need to install Node-RED see [here](https://nodered.org/docs/getting-started/installation).
-
-- [Node.js](https://nodejs.org) v10.0 or newer
-- [Node-RED](https://nodered.org/) v1.0 or newer
+- [Node.js](https://nodejs.org) 10 or newer
+- [Node-RED](https://nodered.org/) 1.0 or newer
 
 ## Installation
- 
-### Via Node-RED Manage Palette
 
-1. Open Node-RED in your browser
-2. Click the menu (top right) → Manage palette
-3. Select the "Install" tab
-4. Search for `node-red-contrib-watchdirectory`
-5. Click Install
+### Via the palette manager
+
+Menu → Manage palette → Install → search for `node-red-contrib-watchdirectory`.
 
 ### Via npm
 
@@ -254,43 +156,15 @@ npm install node-red-contrib-watchdirectory
 
 Then restart Node-RED.
 
-## Technical Details
+## Contributing
 
-This node is a wrapper for [chokidar](https://github.com/paulmillr/chokidar) with the following configuration:
-
-- `awaitWriteFinish: true` - Waits until files are completely written before triggering
-- `usePolling: true` - Compatible with network drives and Docker volumes
-- `alwaysStat: true` - Provides file size information
-- `useFsEvents: true` - Uses native OS file events when available
-- `binaryInterval: 1000` - 1-second polling interval
-
-## Changelog
-
-### 1.0.15
-- Current stable version
+Pull requests are welcome. For larger changes please open an issue first. Bugs and feature requests go to the [issue tracker](https://github.com/Paprikawurst/node-red-contrib-watchdirectory/issues).
 
 ## License
 
 ISC
 
-## Contributing
-
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
-
-### Report Issues
-
-Found a bug or have a feature request? Please open an issue on [GitHub](https://github.com/fatoldsun00/node-red-contrib-watchdirectory/issues).
-
 ## Links
 
-- [GitHub Repository](https://github.com/fatoldsun00/node-red-contrib-watchdirectory)
-- [Node-RED](https://nodered.org/)
-- [Chokidar Documentation](https://github.com/paulmillr/chokidar)
-
-## Author
-
-FatOldSun
-
----
-
-Made with ❤️ for the Node-RED community
+- [GitHub repository](https://github.com/Paprikawurst/node-red-contrib-watchdirectory)
+- [chokidar](https://github.com/paulmillr/chokidar)
