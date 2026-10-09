@@ -126,6 +126,10 @@ This is expected: the node waits about 2 seconds for the file size to be stable,
 **Multiple events for one file**
 The writing application most likely saves the file more than once. See the tips above.
 
+## Example
+
+An example flow is included in [`examples/watch-directory.json`](examples/watch-directory.json). In Node-RED, open Menu → Import → Examples → `node-red-contrib-watchdirectory`. It watches the folder `watch-input` for created, updated and deleted files and prints each event to the debug panel.
+
 ## Technical details
 
 The node calls chokidar with these notable options:

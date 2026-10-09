@@ -1,0 +1,94 @@
+[
+    {
+        "id": "a1b2c3d4e5f60001",
+        "type": "tab",
+        "label": "watch-directory example",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "a1b2c3d4e5f60003",
+        "type": "watch-directory",
+        "z": "a1b2c3d4e5f60001",
+        "folder": "watch-input",
+        "folderType": "str",
+        "recursive": 0,
+        "typeEvent": "create",
+        "ignoreInitial": true,
+        "ignoredFiles": "^~\\$|\\.tmp$",
+        "ignoredFilesType": "re",
+        "name": "created",
+        "x": 130,
+        "y": 140,
+        "wires": [
+            [
+                "a1b2c3d4e5f60006"
+            ]
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f60004",
+        "type": "watch-directory",
+        "z": "a1b2c3d4e5f60001",
+        "folder": "watch-input",
+        "folderType": "str",
+        "recursive": 0,
+        "typeEvent": "update",
+        "ignoreInitial": true,
+        "ignoredFiles": "^~\\$|\\.tmp$",
+        "ignoredFilesType": "re",
+        "name": "updated",
+        "x": 140,
+        "y": 200,
+        "wires": [
+            [
+                "a1b2c3d4e5f60006"
+            ]
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f60005",
+        "type": "watch-directory",
+        "z": "a1b2c3d4e5f60001",
+        "folder": "watch-input",
+        "folderType": "str",
+        "recursive": 0,
+        "typeEvent": "delete",
+        "ignoreInitial": true,
+        "ignoredFiles": "^~\\$|\\.tmp$",
+        "ignoredFilesType": "re",
+        "name": "deleted",
+        "x": 130,
+        "y": 260,
+        "wires": [
+            [
+                "a1b2c3d4e5f60006"
+            ]
+        ]
+    },
+    {
+        "id": "a1b2c3d4e5f60006",
+        "type": "debug",
+        "z": "a1b2c3d4e5f60001",
+        "name": "file event",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "5c7780c485859d48",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-watchdirectory": "1.1.0"
+        }
+    }
+]
